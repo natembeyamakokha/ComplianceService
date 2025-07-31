@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compliance.Api", "Complianc
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compliance.Application", "Compliance.Application\Compliance.Application.csproj", "{4A85A545-FB66-4F69-9F25-97C34566917F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compliance.Infrastructure", "Compliance.Infrastucture\Compliance.Infrastructure.csproj", "{4A8596FD-CC84-4C6B-B108-5CA44B213E53}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compliance.Infrastructure", "Compliance.Infrastructure\Compliance.Infrastructure.csproj", "{4A8596FD-CC84-4C6B-B108-5CA44B213E53}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compliance.Domain", "Compliance.Domain\Compliance.Domain.csproj", "{BF06CA34-022C-4338-B2A2-A91B98CFACE1}"
 EndProject

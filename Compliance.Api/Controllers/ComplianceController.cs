@@ -1,10 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Compliance.Application.UseCases.Compliance.IndividualScreening;
-using Compliance.Application.UseCases.Compliance.OrganisationScreening;
-using Compliance.Application.UseCases.Compliance.VesselScreening;
-using Compliance.Application.UseCases.Compliance.UnspecifiedScreening;
-using Compliance.Application.UseCases.Compliance.VerifyFraudStatus;
+using Compliance.Application.UseCases.IndividualScreening;
+using Compliance.Application.UseCases.OrganisationScreening;
+using Compliance.Application.UseCases.VesselScreening;
 using Compliance.Domain.Form.Compliance;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -15,18 +13,6 @@ namespace Compliance.Api.Controllers;
 public class ComplianceController(IMediator mediator) : ControllerBase
 {
     private readonly IMediator _mediator = mediator;
-
-    /// <summary>
-    /// Screen a name against fraud/watchlist databases (simple name check)
-    /// </summary>
-    [HttpPost("name-screening")]
-    public async Task<IActionResult> ValidateFraudStatusAsync([FromBody] WorldCheckRequest request)
-    {
-        var command = new VerifyFraudStatusCommand(request.CustomerName, request.EntityType);
-        var result = await _mediator.Send(command);
-
-        return result.Successful ? Ok(result) : BadRequest(result);
-    }
 
     /// <summary>
     /// Full individual screening with secondary fields (DOB, nationality, document, etc.)
@@ -98,29 +84,6 @@ public class ComplianceController(IMediator mediator) : ControllerBase
             CaseId = request.CaseId,
             VesselName = request.Name,
             IMONumber = request.IMONumber
-        };
-
-        var result = await _mediator.Send(command);
-        return result.Successful ? Ok(result) : BadRequest(result);
-    }
-
-    /// <summary>
-    /// Screen an entity when type is unspecified
-    /// </summary>
-    [HttpPost("unspecified-screening")]
-    public async Task<IActionResult> ScreenUnspecifiedAsync([FromBody] UnspecifiedScreeningRequestDto request)
-    {
-        if (string.IsNullOrWhiteSpace(request?.Name))
-            return BadRequest("Entity name is required.");
-
-        var command = new UnspecifiedScreeningCommand
-        {
-            BankId = request.BankId,
-            CaseId = request.CaseId,
-            EntityName = request.Name,
-            DocumentId = request.DocumentId,
-            DocumentIdType = request.DocumentIdType,
-            DocumentIdCountry = request.DocumentIdCountry
         };
 
         var result = await _mediator.Send(command);

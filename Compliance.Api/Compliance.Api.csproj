@@ -31,7 +31,7 @@
   </ItemGroup>
 
    <ItemGroup>
-    <ProjectReference Include="..\Compliance.Infrastucture\Compliance.Infrastructure.csproj" />
+    <ProjectReference Include="..\Compliance.Infrastructure\Compliance.Infrastructure.csproj" />
     <ProjectReference Include="..\Compliance.Application\Compliance.Application.csproj" />
     <ProjectReference Include="..\Compliance.Domain\Compliance.Domain.csproj" />
   </ItemGroup>
