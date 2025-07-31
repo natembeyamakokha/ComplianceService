@@ -1,0 +1,189 @@
+# Author: Douglas Asiago
+trigger:
+  branches:
+    include:
+    - main
+    - pilot
+    - release
+    - develop
+    
+variables:
+  dockerRegistryServiceConnection: 'acromnichannel'
+  containerRegistry: 'acromnichannel.azurecr.io'
+  appName: 'complianceservice'
+  apiName: 'Compliance.Api'
+  namespace: 'omnichannel'
+  pilotNamespace: 'omnichannel'
+  subscription: 'Enterprise Core'
+  vmImageName: 'ubuntu-latest'
+  buildConfiguration: 'Release'
+  dockerfilePath: '**/Dockerfile'
+  tag: '$(Build.BuildId)'
+  dotNetVersion: '8.x'
+  unitTestFile: '**/*UnitTests.csproj'
+  integrationTestFile: '**/*Integration.Test.csproj'
+
+resources:
+  repositories:
+  - repository: templates
+    type: git
+    name: Omni-Channel/BuildTemplates
+
+stages:
+  - stage: TestsAndCoverage
+    # condition: and(always(), eq(variables['Build.Reason'], 'PullRequest'))
+    displayName: Code Test And Coverage
+    jobs:
+      - template: dotnetTestAndCodeCoverage.yaml@templates
+        parameters:
+          vmImageName: $(vmImageName)
+          dotNetVersion: $(dotNetVersion)
+          unitTestFile: $(unitTestFile)
+          integrationTestFile: $(integrationTestFile)
+          runIntegrationTest: false
+          runTestAndCodeCoverage: true
+
+  - stage: DEV
+    displayName: Build DEV
+    dependsOn: TestsAndCoverage
+    condition: and(always(), contains(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - template: dotnetBuildTemplate.yaml@templates
+        parameters:
+          environment: 'development'
+          vmImageName: $(vmImageName)
+          subscription: $(subscription)
+          dockerRegistryServiceConnection: $(dockerRegistryServiceConnection)
+          keyVault: 'kv-omnichannel-dev'
+          imageRepository: 'complianceservice-dev'
+          dockerfilePath: $(dockerfilePath)
+          containerRegistry: $(containerRegistry)
+          tag: $(tag)
+          appName: $(appName)
+          namespace: $(namespace)
+          publishSwagger: false
+
+  - stage: DEV_CD
+    displayName: Deploy DEV
+    dependsOn: 
+    - DEV
+    condition: and(succeeded(),  contains(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - template: kubernetes-release-template.yaml@templates
+        parameters:
+          environment: 'development'
+          appName: $(appName)
+          vmImageName: $(vmImageName)
+          kubernetesCluster: 'aks-omnichannel-dev-001'
+          azureResourceGroup: 'RSG-DEV-OMNI-WE'
+          namespace: $(namespace)
+          serviceConnection: $(subscription)       
+
+  - stage: UAT
+    displayName: Build UAT
+    dependsOn: TestsAndCoverage
+    condition: and(always(), contains(variables['Build.SourceBranch'], 'refs/heads/release'))
+    jobs:
+      - template: dotnetBuildTemplate.yaml@templates
+        parameters:
+          environment: 'uat'
+          vmImageName: $(vmImageName)
+          subscription: $(subscription)
+          dockerRegistryServiceConnection: $(dockerRegistryServiceConnection)
+          keyVault: 'kv-uat-omnichannel'
+          imageRepository: 'complianceservice-uat'
+          dockerfilePath: $(dockerfilePath)
+          containerRegistry: $(containerRegistry)
+          tag: $(tag)
+          appName: $(appName)
+          namespace: $(namespace)
+          publishSwagger: false
+
+  - stage: UAT_CD
+    displayName: Deploy UAT
+    dependsOn: 
+    - UAT
+    condition: and(succeeded(),  contains(variables['Build.SourceBranch'], 'refs/heads/release'))
+    jobs:
+      - template: kubernetes-release-template.yaml@templates
+        parameters:
+          environment: 'uat'
+          appName: $(appName)
+          vmImageName: $(vmImageName)
+          kubernetesCluster: 'aks-omnichannel-uat-001'
+          azureResourceGroup: 'RSG-UAT-OMNI-WE'
+          namespace: $(namespace)
+          serviceConnection: $(subscription)          
+
+  - stage: PILOT
+    displayName: Build Pilot
+    dependsOn: TestsAndCoverage
+    condition: and(always(), contains(variables['Build.SourceBranch'], 'refs/heads/pilot'))
+    jobs:
+      - template: dotnetBuildTemplate.yaml@templates
+        parameters:
+          environment: 'pilot'
+          vmImageName: $(vmImageName)
+          subscription: $(subscription)
+          dockerRegistryServiceConnection: $(dockerRegistryServiceConnection)
+          keyVault: 'kv-omnichannel-pilot'
+          imageRepository: 'complianceservice-pilot'
+          dockerfilePath: $(dockerfilePath)
+          containerRegistry: $(containerRegistry)
+          tag: $(tag)
+          appName: $(appName)
+          namespace: $(pilotNamespace)
+          publishSwagger: false
+
+  - stage: PILOT_CD
+    displayName: Deploy PILOT
+    dependsOn: 
+    - PILOT
+    condition: and(succeeded(),  contains(variables['Build.SourceBranch'], 'refs/heads/pilot'))
+    jobs:
+      - template: kubernetes-release-template.yaml@templates
+        parameters:
+          environment: 'pilot'
+          appName: $(appName)
+          vmImageName: $(vmImageName)
+          kubernetesCluster: 'aks-omnichannel-prod-001'
+          azureResourceGroup: 'RSG-PROD-OMNI-WE'
+          namespace: $(pilotNamespace)
+          serviceConnection: $(subscription)
+          
+  - stage: PROD
+    displayName: Build Production
+    dependsOn: TestsAndCoverage
+    condition: and(always(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))
+    jobs:
+      - template: dotnetBuildTemplate.yaml@templates
+        parameters:
+          environment: 'preprod'
+          vmImageName: $(vmImageName)
+          subscription: $(subscription)
+          dockerRegistryServiceConnection: $(dockerRegistryServiceConnection)
+          keyVault: 'kv-preprod-omnichannel'
+          imageRepository: 'complianceservice'
+          dockerfilePath: $(dockerfilePath)
+          containerRegistry: $(containerRegistry)
+          tag: $(tag)
+          appName: $(appName)
+          namespace: 'default'
+          publishSwagger: false
+
+  - stage: PROD_CD
+    displayName: Deploy PROD
+    dependsOn: 
+    - PROD
+    condition: and(succeeded(),  contains(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - template: kubernetes-release-template.yaml@templates
+        parameters:
+          environment: 'preprod'
+          appName: $(appName)
+          vmImageName: $(vmImageName)
+          kubernetesCluster: 'aks-omnichannel-preprod-001'
+          azureResourceGroup: 'RSG-PREPROD-OMNI-WE'
+          namespace: 'default'
+          serviceConnection: $(subscription)          
+

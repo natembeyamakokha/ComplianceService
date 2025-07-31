@@ -1,0 +1,23 @@
+image:
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+service:
+  type: ClusterIP
+  port: 8068
+container:
+  port: 8068
+
+replicaCount:
+  minReplicas: 1
+  maxReplicas: 1
+  prodMinReplicas: 3
+  prodMaxReplicas: 10
+resources:
+  requestsMemory: '256Mi'
+  requestsCpu: '100m'
+  limitsMemory: '512Mi'
+  limitsCpu: '200m'
+  prodRequestsMemory: '2Gi'
+  prodRequestsCpu: '300m'
+  prodLimitsMemory: '3Gi'
+  prodLimitsCpu: '400m'

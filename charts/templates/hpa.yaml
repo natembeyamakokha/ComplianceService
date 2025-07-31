@@ -1,0 +1,31 @@
+# Author: Douglas Asiago
+# POD AUTOSCALER
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.name }}    
+{{- if or (eq .Values.env "development") (eq .Values.env "dev") (eq .Values.env "uat") (eq .Values.env "release") (eq .Values.env "pilot") }}
+  minReplicas: {{ .Values.replicaCount.minReplicas }}
+  maxReplicas: {{ .Values.replicaCount.maxReplicas }}
+{{- else if or (eq .Values.env "preprod") (eq .Values.env "prod") (eq .Values.env "production") }}
+  minReplicas: {{ .Values.replicaCount.prodMinReplicas }}
+  maxReplicas: {{ .Values.replicaCount.prodMaxReplicas }}  
+{{- end }}
+  metrics:
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: AverageValue
+        averageUtilization: 60
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60

@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<PackageReference Include="Omni" Version="2.0.19" />
+	<PackageReference Include="Omni.CQRS" Version="2.0.19" />
+	<PackageReference Include="Omni.Domain" Version="2.0.19" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Compliance.Shared\Compliance.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

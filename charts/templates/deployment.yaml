@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.name }}
+spec:
+  replicas: {{ .Values.replicaCount.minReplicas }}
+  minReadySeconds: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+        azure.workload.identity/use: "true"   
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5678
+        runAsGroup: 5678
+        fsGroup: 5678
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: sql-service-account
+      # disable automounting API credentials
+      automountServiceAccountToken: false
+      containers:
+      - name: {{ .Values.name }}
+        image: "{{ .Values.image.repository }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 5678
+          capabilities:
+            drop:
+              - ALL
+        resources:
+        {{- if or (eq .Values.env "development") (eq .Values.env "dev") (eq .Values.env "uat") (eq .Values.env "release") }}
+          requests:
+            memory: {{ .Values.resources.requestsMemory }}
+            cpu: {{ .Values.resources.requestsCpu }}
+          limits:
+            memory: {{ .Values.resources.limitsMemory }}
+            cpu: {{ .Values.resources.limitsCpu }}
+        {{- else if or (eq .Values.env "pilot") (eq .Values.env "preprod") (eq .Values.env "prod") (eq .Values.env "production") }}
+          requests:
+            memory: {{ .Values.resources.prodRequestsMemory }}
+            cpu: {{ .Values.resources.prodRequestsCpu }}
+          limits:
+            memory: {{ .Values.resources.prodLimitsMemory }}
+            cpu: {{ .Values.resources.prodLimitsCpu }}
+        {{- end }}
+        ports:
+        - containerPort: {{ .Values.container.port }}
+          # livenessProbe:
+          #   httpGet:
+          #     path: /{{ .Values.namespace }}/{{ .Values.name }}/healthcheck
+          #     port: 8061
+          #     httpHeaders:
+          #     - name: Accept
+          #       value: application/json
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 30
+          # readinessProbe:
+          #   httpGet:
+          #     path: /{{ .Values.namespace }}/{{ .Values.name }}/healthcheck
+          #     port: 8061
+          #     httpHeaders:
+          #     - name: Accept
+          #       value: application/json
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: {{ .Values.env }}
+        
